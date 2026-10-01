@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Adi Panjoko | Konsultan IT & Kebugaran</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --neon-cyan: #00f0ff;
+            --neon-purple: #b026ff;
+            --neon-magenta: #ff003c;
+            --neon-emerald: #10b981;
+            --neon-amber: #f59e0b;
+            --dark-bg: #030712;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--dark-bg);
+            color: #e2e8f0;
+            font-family: 'Rajdhani', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .japanese-text {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        /* Efek Garis Pindai (Scanlines) */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.15) 50%,
+                rgba(0,0,0,0.15)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.5;
+        }
+
+        /* Gaya Panel Kaca (Glassmorphism) */
+        .cyber-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 240, 255, 0.05);
+            position: relative;
+        }
+        
+        /* Dekorasi Sudut Futuristik */
+        .cyber-panel::before, .cyber-panel::after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border: 2px solid var(--neon-cyan);
+            transition: all 0.3s ease;
+        }
+        .cyber-panel::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+        .cyber-panel::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+        /* Navigasi Node */
+        .nav-node {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            border-left: 3px solid transparent;
+        }
+        .nav-node:hover {
+            border-left: 3px solid var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.1);
+            padding-left: 1rem;
+        }
+        .nav-node.active {
+            border-left: 3px solid var(--neon-cyan);
+            background: linear-gradient(90deg, rgba(0, 240, 255, 0.2) 0%, rgba(0,0,0,0) 100%);
+            padding-left: 1.5rem;
+        }
+        .nav-node.active .node-id { color: var(--neon-cyan); text-shadow: 0 0 8px var(--neon-cyan); }
+        
+        /* Animasi Konten Masuk */
+        .animate-enter {
+            animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(30px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Latar Belakang Kanvas */
+        #tactical-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+        }
+
+        /* Scrollbar Khusus */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.5); border-left: 1px solid rgba(0,240,255,0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.4); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
+        
+        .text-shadow-glow {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row w-screen h-screen">
+
+    <canvas id="tactical-bg"></canvas>
+    <div class="scanlines"></div>
+
+    <!-- Lapisan Antarmuka Pengguna (UI) -->
+    <div class="relative z-10 flex flex-col md:flex-row w-full h-full p-4 md:p-6 gap-6 pointer-events-none">
+        
+        <!-- SIDEBAR / PUSAT KOMANDO -->
+        <aside class="cyber-panel w-full md:w-1/3 lg:w-1/4 h-auto md:h-full flex flex-col p-6 pointer-events-auto shrink-0 z-20">
+            
+            <!-- Profil Header -->
+            <div class="mb-6 border-b border-slate-700/70 pb-6">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 bg-slate-900 border border-cyan-500/50 flex items-center justify-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-cyan-500/10 group-hover:bg-cyan-500/30 transition-colors"></div>
+                        <span class="orbitron text-2xl font-bold text-cyan-400">AP</span>
+                        <!-- Aksen Sudut -->
+                        <div class="absolute top-0 left-0 w-2 h-2 border-t border-l border-cyan-400"></div>
+                        <div class="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cyan-400"></div>
+                    </div>
+                    <div>
+                        <h1 class="orbitron text-xl font-bold text-white tracking-widest uppercase text-shadow-glow">Adi Panjoko</h1>
+                        <p class="text-[11px] font-semibold text-cyan-400 tracking-[0.2em] uppercase mt-1">Konsultan IT & Kebugaran</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 text-[10px] uppercase tracking-widest text-slate-400 bg-slate-900/50 p-3 border border-slate-800">
+                    <div>Status: <span class="text-emerald-400 font-bold animate-pulse">AKTIF</span></div>
+                    <div>Lokasi: <span class="text-white">Boyolali, Jateng</span></div>
+                    <div>Otorisasi: <span class="text-purple-400">LEVEL 5</span></div>
+                    <div>Waktu Sys: <span id="sys-time" class="text-cyan-300 font-bold">00:00:00</span></div>
+                </div>
+            </div>
+
+            <!-- Navigasi Node Utama -->
+            <nav class="flex-1 flex flex-col gap-2 overflow-y-auto pr-2">
+                <p class="text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-2 font-bold flex items-center gap-2">
+                    <span class="w-2 h-2 bg-slate-500 rounded-full animate-pulse"></span>
+                    Indeks Modul Data
+                </p>
+                <!-- Tombol Navigasi akan dimuat melalui JavaScript -->
+                <div id="nav-container" class="flex flex-col gap-1.5"></div>
+            </nav>
+
+            <!-- Footer Sidebar / Info Sistem -->
+            <div class="mt-4 pt-4 border-t border-slate-700/70 text-[10px] text-slate-500 flex justify-between items-end uppercase tracking-widest">
+                <div>
+                    <div class="orbitron text-cyan-600">SISTEM TERMINAL V3.1</div>
+                    <div>KONEKSI AMAN TERENKRIPSI</div>
+                </div>
+                <div class="w-10 h-10 border border-slate-700 flex flex-wrap gap-0.5 p-1 opacity-60">
+                    <div class="w-full h-1 bg-cyan-900"></div>
+                    <div class="w-2/3 h-1 bg-cyan-900"></div>
+                    <div class="w-full h-1 bg-cyan-900"></div>
+                    <div class="w-1/2 h-1 bg-cyan-900"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- AREA KONTEN UTAMA -->
+        <main class="flex-1 h-full flex flex-col relative pointer-events-none z-10">
+            <!-- Bilah Dekoratif Atas -->
+            <div class="w-full h-8 mb-4 flex items-center justify-between border-b border-cyan-500/30 px-4 bg-slate-900/40 backdrop-blur-sm">
+                <div class="flex gap-2 items-center">
+                    <div class="w-12 h-1.5 bg-cyan-500 shadow-[0_0_8px_#00f0ff]"></div>
+                    <div class="w-3 h-1.5 bg-cyan-500/50"></div>
+                    <div class="w-1 h-1.5 bg-cyan-500/50"></div>
+                </div>
+                <div class="orbitron text-[10px] text-cyan-400 tracking-[0.3em] uppercase">Panel Pengambilan Data</div>
+            </div>
+
+            <!-- Kontainer Konten Dinamis -->
+            <div class="cyber-panel flex-1 p-6 md:p-10 overflow-y-auto pointer-events-auto relative" id="content-display">
+                <!-- Latar Belakang Dekoratif Modul -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+                <!-- Konten akan disuntikkan ke sini melalui JS -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Jam Sistem Waktu Nyata
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('sys-time').innerText = now.toLocaleTimeString('id-ID', { hour12: false });
+        }, 1000);
+
+        // Repositori Data Portofolio (Bahasa Indonesia)
+        const portfolioData = [
+            {
+                id: 'NODE_00',
+                title: 'Beranda Sistem',
+                icon: '00',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <h2 class="orbitron text-4xl md:text-5xl font-bold text-white mb-2 uppercase tracking-wide">Inisiasi Sistem</h2>
+                        <h3 class="text-xl text-cyan-400 font-semibold tracking-widest mb-8 border-l-4 border-cyan-400 pl-4 bg-cyan-900/20 py-2">
+                            Adi Panjoko | Konsultan IT & Kebugaran
+                        </h3>
+                    </div>
+                    
+                    <div class="animate-enter bg-slate-900/70 p-6 border border-slate-700/80 mb-8 relative" style="animation-delay: 0.2s;">
+                        <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-cyan-500 to-transparent"></div>
+                        <p class="text-slate-300 text-lg leading-relaxed mb-4">
+                            Selamat datang di Terminal Portofolio Lanjutan V3.2. Mengintegrasikan logika sistem jaringan terenkripsi dengan ketangguhan biomekanika fisik manusia. 
+                        </p>
+                        <p class="text-slate-300 text-lg leading-relaxed">
+                            Pilih modul data di panel navigasi untuk mengakses arsip lengkap mengenai keahlian teknis, kepemimpinan operasional, filosofi, hingga catatan gaya hidup.
+                        </p>
+                    </div>
+                `
+            },
+            {
+                id: 'NODE_01',
+                title: 'Biodata Pribadi',
+                icon: '01',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="orbitron text-blue-500 text-3xl font-bold bg-blue-950 px-2 py-1 border border-blue-800">01</span>
+                            <h2 class="orbitron text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">Identitas Entitas</h2>
+                        </div>
+                        <p class="text-slate-400 mb-8 ml-14 border-l-2 border-blue-500 pl-4">Parameter Dasar & Titik Lokasi</p>
+                    </div>
+                    
+                    <div class="animate-enter bg-slate-900/80 border border-blue-900/50 p-6 relative" style="animation-delay: 0.2s;">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-1">Nama Registrasi</h4>
+                                <p class="text-white text-lg orbitron">Adi Panjoko</p>
+                            </div>
+                            <div>
+                                <h4 class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-1">Status Usia</h4>
+                                <p class="text-white text-lg orbitron">27 Tahun <span class="text-slate-500 text-sm">(Lahir: 22 Juli 1999)</span></p>
+                            </div>
+                            <div class="md:col-span-2">
+                                <h4 class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-1">Titik Koordinat Basis (Domisili)</h4>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    <p class="text-slate-300">Kismoyoso, Ngemplak, Boyolali, Jawa Tengah, Indonesia</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Dekorasi Peta -->
+                        <div class="mt-6 border-t border-slate-700/50 pt-4 opacity-50">
+                            <div class="w-full h-24 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0wIDEwaDQwTTAgMjBoNDBNMCAzMGg0ME0xMCAwdjQwTTIwIDB2NDBNMzAgMHY0MCIgc3Ryb2tlPSJyZ2JhKDU5LCAxMzAsIDI0NiwgMC4zKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')] relative">
+                                <div class="absolute top-1/2 left-1/2 w-3 h-3 bg-blue-500 rounded-full animate-ping"></div>
+                                <div class="absolute top-1/2 left-1/2 w-3 h-3 bg-blue-500 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 'NODE_02',
+                title: 'Infrastruktur IT & Server',
+                icon: '02',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="orbitron text-emerald-500 text-3xl font-bold bg-emerald-950 px-2 py-1 border border-emerald-800">02</span>
+                            <h2 class="orbitron text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">Infrastruktur & IT</h2>
+                        </div>
+                        <p class="text-slate-400 mb-8 ml-14 border-l-2 border-emerald-500 pl-4">Keamanan Jaringan, VPN, & Arsitektur Cloud</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-6 pl-2 md:pl-14">
+                        <div class="animate-enter bg-slate-900/70 border border-emerald-900/60 p-6 hover:border-emerald-400 transition-colors" style="animation-delay: 0.2s;">
+                            <h3 class="orbitron text-xl text-emerald-400 mb-3">Topologi Jaringan Lokal & Keamanan Fisik</h3>
+                            <p class="text-slate-300 text-sm mb-4 leading-relaxed">Penggelaran infrastruktur jaringan dari level fisik hingga logika. Meliputi instalasi sistem pengawasan CCTV terintegrasi dan manajemen rute internet.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-emerald-950/50 border border-emerald-800/50 text-emerald-400 text-xs">MikroTik RouterOS</span>
+                                <span class="px-3 py-1 bg-emerald-950/50 border border-emerald-800/50 text-emerald-400 text-xs">Sistem OpenWRT</span>
+                                <span class="px-3 py-1 bg-emerald-950/50 border border-emerald-800/50 text-emerald-400 text-xs">WireGuard VPN Terenkripsi</span>
+                                <span class="px-3 py-1 bg-emerald-950/50 border border-emerald-800/50 text-emerald-400 text-xs">Sistem CCTV (IP/Analog)</span>
+                            </div>
+                        </div>
+
+                        <div class="animate-enter bg-slate-900/70 border border-teal-900/60 p-6 hover:border-teal-400 transition-colors" style="animation-delay: 0.3s;">
+                            <h3 class="orbitron text-xl text-teal-400 mb-3">Arsitektur Cloud & Virtual Private Server</h3>
+                            <p class="text-slate-300 text-sm mb-4 leading-relaxed">Pengerahan (deployment) dan administrasi server tingkat lanjut (VPS & Bare Metal). Memastikan keandalan layanan, manajemen lalu lintas data, dan sistem cadangan data (backup).</p>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div class="bg-slate-950 p-3 text-center border-b-2 border-teal-700 text-xs font-bold text-white">Herza Cloud</div>
+                                <div class="bg-slate-950 p-3 text-center border-b-2 border-teal-700 text-xs font-bold text-white">8Labs</div>
+                                <div class="bg-slate-950 p-3 text-center border-b-2 border-teal-700 text-xs font-bold text-white">CepatCloud</div>
+                                <div class="bg-slate-950 p-3 text-center border-b-2 border-teal-700 text-xs font-bold text-white">Oracle Cloud</div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 'NODE_03',
+                title: 'Kepelatihan Olahraga',
+                icon: '03',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="orbitron text-amber-500 text-3xl font-bold bg-amber-950 px-2 py-1 border border-amber-800">03</span>
+                            <h2 class="orbitron text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">Kepelatihan Fisik</h2>
+                        </div>
+                        <p class="text-slate-400 mb-8 ml-14 border-l-2 border-amber-500 pl-4">Program Peningkatan Performa & Modifikasi Biomekanika</p>
+                    </div>
+
+                    <div class="pl-2 md:pl-14 space-y-6">
+                        <div class="animate-enter flex flex-col md:flex-row gap-4 bg-slate-900/80 p-5 border border-slate-700/50" style="animation-delay: 0.2s;">
+                            <div class="w-16 h-16 bg-amber-950 border border-amber-600 flex items-center justify-center shrink-0">
+                                <span class="text-amber-500 text-2xl font-black">S1</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white mb-1">Gelar Kepelatihan Olahraga</h3>
+                                <p class="text-sm text-slate-300">Pendidikan akademis formal yang mencakup kinesiologi, anatomi, metodologi pelatihan, dan psikologi atlet, menjadi dasar pijakan seluruh rancangan program latihan.</p>
+                            </div>
+                        </div>
+
+                        <div class="animate-enter border-l-4 border-amber-500 bg-slate-900/60 p-5" style="animation-delay: 0.3s;">
+                            <h3 class="text-lg font-bold text-white mb-1">Instruktur Atlet NPCI <span class="text-amber-500 text-sm ml-2">(4+ Tahun)</span></h3>
+                            <p class="text-sm text-slate-400 leading-relaxed">
+                                Membina atlet dari National Paralympic Committee of Indonesia. Menyusun periodisasi latihan yang disesuaikan secara mikroskopis untuk kebutuhan khusus masing-masing atlet, memastikan kebangkitan potensi fisik dan mental maksimal di arena kompetisi.
+                            </p>
+                        </div>
+
+                        <div class="animate-enter border-l-4 border-yellow-500 bg-slate-900/60 p-5" style="animation-delay: 0.4s;">
+                            <h3 class="text-lg font-bold text-white mb-1">Mantan Atlet Lari Cepat (Sprinter)</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed">
+                                Berpengalaman sebagai atlet sprint jarak pendek yang ditempa secara kompetitif di lintasan bersejarah <strong>Stadion Manahan</strong>. Pemahaman langsung mengenai dinamika otot eksplosif, toleransi laktat, dan tekanan psikologis saat berada di garis start.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 'NODE_04',
+                title: 'Kepemimpinan Sosial',
+                icon: '04',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="orbitron text-rose-500 text-3xl font-bold bg-rose-950 px-2 py-1 border border-rose-800">04</span>
+                            <h2 class="orbitron text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">Komando Komunitas</h2>
+                        </div>
+                        <p class="text-slate-400 mb-8 ml-14 border-l-2 border-rose-500 pl-4">Manajemen Organisasi Pemuda & Keterlibatan Sipil</p>
+                    </div>
+
+                    <div class="pl-2 md:pl-14">
+                        <div class="animate-enter bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-rose-900/20 via-slate-900 to-slate-900 border border-rose-900/50 p-8 relative" style="animation-delay: 0.2s;">
+                            <div class="inline-block px-3 py-1 bg-rose-950 border border-rose-500 text-rose-400 text-xs font-bold tracking-widest mb-4">
+                                KETUA ORGANISASI
+                            </div>
+                            <h3 class="text-3xl font-bold text-white mb-2">Karang Taruna Bina Bunga Taruna</h3>
+                            
+                            <div class="mt-6 space-y-5">
+                                <div class="flex gap-4">
+                                    <div class="w-1.5 bg-rose-500 shrink-0 shadow-[0_0_8px_#f43f5e]"></div>
+                                    <p class="text-slate-300 text-sm leading-relaxed">
+                                        Memegang tongkat komando tertinggi dalam menggerakkan pemuda-pemudi desa. Menyatukan berbagai pandangan, meredam konflik, dan menginisiasi program kerja yang membawa dampak positif nyata bagi kehidupan bermasyarakat.
+                                    </p>
+                                </div>
+                                <div class="flex gap-4">
+                                    <div class="w-1.5 bg-rose-700 shrink-0"></div>
+                                    <p class="text-slate-300 text-sm leading-relaxed">
+                                        <strong>Catatan Khusus (Public Speaking):</strong><br>
+                                        Dipercaya penuh untuk memberikan <em>Pidato Pembukaan Resmi</em> pada peringatan akbar HUT Kemerdekaan RI ke-81 di lingkungan Jampen. Sebuah manifestasi dari kemampuan komunikasi retoris yang mampu mengobarkan semangat gotong-royong warga.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 'NODE_05',
+                title: 'Studi Bahasa Jepang',
+                icon: '05',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="orbitron text-pink-500 text-3xl font-bold bg-pink-950 px-2 py-1 border border-pink-800">05</span>
+                            <h2 class="orbitron text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">Modul Linguistik</h2>
+                        </div>
+                        <p class="text-slate-400 mb-8 ml-14 border-l-2 border-pink-500 pl-4">Sertifikasi JLPT N3 & Akuisisi Bahasa</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pl-2 md:pl-14">
+                        <div class="animate-enter bg-slate-900/80 border border-slate-700 p-6 flex flex-col" style="animation-delay: 0.2s;">
+                            <div class="text-4xl mb-4">🇯🇵</div>
+                            <h3 class="text-xl font-bold text-white mb-2">Target Operasi: JLPT N3</h3>
+                            <p class="text-slate-400 text-sm mb-4 flex-1">
+                                Saat ini sedang menempuh latihan intensif harian untuk menembus standar kelancaran Bahasa Jepang tingkat N3. Tujuan utamanya adalah ekspansi komunikasi global dan sinkronisasi dengan standar profesional internasional.
+                            </p>
+                            <div class="bg-slate-950 p-3 border border-pink-900/30">
+                                <span class="text-xs text-pink-400 font-bold uppercase tracking-widest block mb-2">Buku Panduan Takti:</span>
+                                <ul class="text-sm text-slate-300 list-disc list-inside">
+                                    <li>Seri TRY! N3</li>
+                                    <li>Seri Nihongo Soumatome</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="animate-enter space-y-4" style="animation-delay: 0.3s;">
+                            <h3 class="orbitron text-xs tracking-widest text-pink-500 uppercase mb-2">Tiga Pilar Filosofi Budaya</h3>
+                            
+                            <div class="bg-slate-900 p-4 border-l-2 border-pink-400 group hover:bg-slate-800 transition-colors">
+                                <h4 class="text-white font-bold mb-1 flex justify-between">
+                                    <span>Yorisou <span class="japanese-text ml-2 font-normal text-pink-400">寄り添う</span></span>
+                                </h4>
+                                <p class="text-xs text-slate-400">Mendampingi dengan empati. Berada di sisi seseorang secara mental dan fisik untuk memahami kesulitan mereka sepenuhnya.</p>
+                            </div>
+                            
+                            <div class="bg-slate-900 p-4 border-l-2 border-pink-500 group hover:bg-slate-800 transition-colors">
+                                <h4 class="text-white font-bold mb-1 flex justify-between">
+                                    <span>Jiritsu Shien <span class="japanese-text ml-2 font-normal text-pink-400">自立支援</span></span>
+                                </h4>
+                                <p class="text-xs text-slate-400">Mendukung kemandirian. Memberikan bantuan bukan untuk menciptakan ketergantungan, melainkan agar entitas tersebut dapat berdiri sendiri.</p>
+                            </div>
+                            
+                            <div class="bg-slate-900 p-4 border-l-2 border-pink-600 group hover:bg-slate-800 transition-colors">
+                                <h4 class="text-white font-bold mb-1 flex justify-between">
+                                    <span>Songen <span class="japanese-text ml-2 font-normal text-pink-400">尊厳</span></span>
+                                </h4>
+                                <p class="text-xs text-slate-400">Menjaga martabat. Penghormatan absolut terhadap nilai kemanusiaan setiap individu dalam kondisi apapun.</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 'NODE_06',
+                title: 'Dedikasi & Filosofi',
+                icon: '06',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="orbitron text-indigo-500 text-3xl font-bold bg-indigo-950 px-2 py-1 border border-indigo-800">06</span>
+                            <h2 class="orbitron text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">Protokol Empati</h2>
+                        </div>
+                        <p class="text-slate-400 mb-8 ml-14 border-l-2 border-indigo-500 pl-4">Pengabdian Keluarga & Pembentukan Karakter</p>
+                    </div>
+
+                    <div class="pl-2 md:pl-14">
+                        <div class="animate-enter bg-slate-900/60 border border-slate-700/60 p-8 relative overflow-hidden" style="animation-delay: 0.2s;">
+                            <!-- Accent blur -->
+                            <div class="absolute -top-10 -right-10 w-40 h-40 bg-indigo-600/10 rounded-full blur-2xl pointer-events-none"></div>
+                            
+                            <svg class="w-10 h-10 text-indigo-500/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                            
+                            <h3 class="text-2xl font-bold text-white mb-4">Pengasuhan (Caregiving) Jangka Panjang</h3>
+                            <p class="text-slate-300 leading-relaxed mb-6">
+                                Memiliki pengalaman nyata dan mendalam dalam merawat serta mendampingi kakek, nenek, dan anggota keluarga secara berkelanjutan. Ini bukan sekadar kewajiban, melainkan sebuah latihan spiritual yang menguji dan menumbuhkan kesabaran tanpa batas.
+                            </p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                                <div class="bg-slate-950 p-4 border-l-2 border-indigo-500">
+                                    <h4 class="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-1">Disiplin Mental</h4>
+                                    <p class="text-xs text-slate-400">Membentuk ketangguhan emosional untuk tetap rasional dan penuh kasih di tengah situasi krisis keluarga.</p>
+                                </div>
+                                <div class="bg-slate-950 p-4 border-l-2 border-indigo-400">
+                                    <h4 class="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-1">Empati Taktis</h4>
+                                    <p class="text-xs text-slate-400">Menerjemahkan rasa peduli menjadi tindakan nyata, efisien, dan tepat sasaran sesuai filosofi <em class="text-pink-400">Yorisou</em>.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 'NODE_07',
+                title: 'Hobi & Hiburan',
+                icon: '07',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="orbitron text-fuchsia-500 text-3xl font-bold bg-fuchsia-950 px-2 py-1 border border-fuchsia-800">07</span>
+                            <h2 class="orbitron text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">Subsistem Rekreasi</h2>
+                        </div>
+                        <p class="text-slate-400 mb-8 ml-14 border-l-2 border-fuchsia-500 pl-4">Simulasi Digital, Sastra Jaringan, & Seni Tradisional</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pl-2 md:pl-14">
+                        <!-- Kartu Game -->
+                        <div class="animate-enter bg-slate-900/80 border border-slate-700 hover:border-fuchsia-500 transition-colors p-5 relative overflow-hidden group" style="animation-delay: 0.2s;">
+                            <div class="absolute bottom-0 right-0 text-7xl opacity-5 group-hover:opacity-20 transition-opacity">🎮</div>
+                            <h3 class="orbitron text-lg font-bold text-fuchsia-400 mb-2">Esports & Taktik</h3>
+                            <h4 class="text-white font-bold text-sm mb-3">Naraka: Bladepoint</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                Melatih refleks, pengambilan keputusan dalam hitungan milidetik, dan koordinasi tim dalam simulasi pertarungan jarak dekat <em>battle royale</em> bergaya oriental.
+                            </p>
+                        </div>
+
+                        <!-- Kartu Novel -->
+                        <div class="animate-enter bg-slate-900/80 border border-slate-700 hover:border-fuchsia-500 transition-colors p-5 relative overflow-hidden group" style="animation-delay: 0.3s;">
+                            <div class="absolute bottom-0 right-0 text-7xl opacity-5 group-hover:opacity-20 transition-opacity">📚</div>
+                            <h3 class="orbitron text-lg font-bold text-fuchsia-400 mb-2">Sastra Web</h3>
+                            <h4 class="text-white font-bold text-sm mb-3">Long Live the King</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                Mengeksplorasi narasi kepahlawanan, strategi geopolitik fiktif, dan pembangunan dunia (world-building) melalui novel web. Memberikan perspektif naratif yang luas.
+                            </p>
+                        </div>
+
+                        <!-- Kartu Musik -->
+                        <div class="animate-enter bg-slate-900/80 border border-slate-700 hover:border-fuchsia-500 transition-colors p-5 relative overflow-hidden group" style="animation-delay: 0.4s;">
+                            <div class="absolute bottom-0 right-0 text-7xl opacity-5 group-hover:opacity-20 transition-opacity">🎵</div>
+                            <h3 class="orbitron text-lg font-bold text-fuchsia-400 mb-2">Seni Akustik</h3>
+                            <h4 class="text-white font-bold text-sm mb-3">Gamelan Tradisional</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                Memainkan instrumen Gamelan sebagai sarana meditasi dan apresiasi terhadap resonansi frekuensi budaya lokal. Melatih sinkronisasi ritme komunal.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 'NODE_08',
+                title: 'Kebugaran & Gaya Hidup',
+                icon: '08',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="orbitron text-cyan-400 text-3xl font-bold bg-cyan-950 px-2 py-1 border border-cyan-800">08</span>
+                            <h2 class="orbitron text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">Telemetri Fisik</h2>
+                        </div>
+                        <p class="text-slate-400 mb-8 ml-14 border-l-2 border-cyan-400 pl-4">Pemeliharaan Perangkat Keras Biologis & Bahan Bakar</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pl-2 md:pl-14">
+                        <div class="space-y-6">
+                            <div class="animate-enter bg-slate-900/80 p-5 border-l-4 border-cyan-500 shadow-lg" style="animation-delay: 0.2s;">
+                                <h3 class="text-white font-bold mb-2 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    Renang Ketahanan (Endurance)
+                                </h3>
+                                <p class="text-sm text-slate-400">Berlatih rutin secara akuatik di <strong>Kolam Renang Manahan</strong> untuk menjaga kapasitas paru-paru (VO2 Max), kesehatan kardiovaskular, dan fleksibilitas persendian.</p>
+                            </div>
+                            
+                            <div class="animate-enter bg-slate-900/80 p-5 border-l-4 border-cyan-600 shadow-lg" style="animation-delay: 0.3s;">
+                                <h3 class="text-white font-bold mb-2 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                                    Latihan Beban (Weight Training)
+                                </h3>
+                                <p class="text-sm text-slate-400">Stimulasi hipertrofi dan pemeliharaan massa otot rangka melalui protokol latihan angkat beban. Menjaga postur tubuh ideal dan rasio tenaga-terhadap-berat badan.</p>
+                            </div>
+                        </div>
+
+                        <div class="animate-enter bg-slate-900/40 border border-slate-700/50 p-6 flex flex-col justify-center" style="animation-delay: 0.4s;">
+                            <h3 class="orbitron text-sm text-cyan-500 tracking-widest uppercase mb-4 text-center border-b border-slate-700 pb-2">Preferensi Nutrisi / Bahan Bakar</h3>
+                            
+                            <div class="space-y-4">
+                                <div class="bg-slate-950 p-4 border border-slate-800 hover:border-cyan-500/50 transition-colors flex justify-between items-center">
+                                    <div>
+                                        <h4 class="text-white font-bold text-sm">Soto (Berkuah)</h4>
+                                        <p class="text-xs text-slate-500">Elektrolit & Karbohidrat Cepat</p>
+                                    </div>
+                                    <span class="text-2xl">🍲</span>
+                                </div>
+                                <div class="bg-slate-950 p-4 border border-slate-800 hover:border-cyan-500/50 transition-colors flex justify-between items-center">
+                                    <div>
+                                        <h4 class="text-white font-bold text-sm">Bubur Kacang Hijau</h4>
+                                        <p class="text-xs text-slate-500">Protein Nabati & Serat Pemulihan</p>
+                                    </div>
+                                    <span class="text-2xl">🥣</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 'NODE_09',
+                title: 'Kontak & Transmisi',
+                icon: '09',
+                content: `
+                    <div class="animate-enter" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="orbitron text-red-500 text-3xl font-bold bg-red-950 px-2 py-1 border border-red-800">09</span>
+                            <h2 class="orbitron text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">Transmisi Data</h2>
+                        </div>
+                        <p class="text-slate-400 mb-8 ml-14 border-l-2 border-red-500 pl-4">Buka Saluran Komunikasi Langsung</p>
+                    </div>
+
+                    <div class="pl-2 md:pl-14">
+                        <div class="animate-enter bg-black/60 border border-red-900/50 p-1 font-mono" style="animation-delay: 0.2s;">
+                            <div class="bg-slate-950 p-4 border border-slate-800">
+                                <div class="text-red-500 text-xs mb-4">
+                                    <p>> MENGINISIASI PROTOKOL HANDSHAKE...</p>
+                                    <p>> STATUS KONEKSI: <span class="text-emerald-500">AMAN (256-BIT ENCRYPTION)</span></p>
+                                    <p>> MASUKKAN PESAN UNTUK OPERATOR [ADI PANJOKO]:</p>
+                                </div>
+                                
+                                <form onsubmit="event.preventDefault(); alert('Modul pengiriman pesan dinonaktifkan dalam simulasi antarmuka ini. Silakan gunakan jalur email langsung.');" class="space-y-4">
+                                    <div>
+                                        <label class="block text-slate-500 text-xs mb-1 uppercase">ID Pengirim (Nama)</label>
+                                        <input type="text" class="w-full bg-slate-900 border border-slate-700 text-cyan-400 p-2 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder=">> Masukkan nama...">
+                                    </div>
+                                    <div>
+                                        <label class="block text-slate-500 text-xs mb-1 uppercase">Paket Data (Pesan)</label>
+                                        <textarea rows="4" class="w-full bg-slate-900 border border-slate-700 text-cyan-400 p-2 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder=">> Ketik pesan transmisi..."></textarea>
+                                    </div>
+                                    <button type="submit" class="orbitron w-full bg-red-900/40 hover:bg-red-700 text-red-400 hover:text-white border border-red-700 py-3 text-sm tracking-[0.2em] uppercase transition-all duration-300">
+                                        Kirim Transmisi
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="animate-enter mt-6 flex gap-4" style="animation-delay: 0.3s;">
+                            <a href="#" class="flex-1 bg-slate-900 border border-slate-700 p-3 text-center hover:border-red-500 group transition-colors">
+                                <span class="text-slate-400 text-xs uppercase tracking-widest block mb-1 group-hover:text-red-400">Saluran Utama</span>
+                                <span class="text-white text-sm font-bold">Email Secure</span>
+                            </a>
+                            <a href="#" class="flex-1 bg-slate-900 border border-slate-700 p-3 text-center hover:border-red-500 group transition-colors">
+                                <span class="text-slate-400 text-xs uppercase tracking-widest block mb-1 group-hover:text-red-400">Jalur Profesional</span>
+                                <span class="text-white text-sm font-bold">LinkedIn</span>
+                            </a>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        const navContainer = document.getElementById('nav-container');
+        const contentDisplay = document.getElementById('content-display');
+        let activeNodeId = 'NODE_00';
+
+        // Fungsi Render Menu Navigasi
+        function renderNav() {
+            navContainer.innerHTML = '';
+            
+            // Peta warna untuk 10 node agar UI terlihat lebih hidup
+            const colorMap = [
+                'cyan-500', 'blue-500', 'emerald-500', 'amber-500', 'rose-500', 
+                'pink-500', 'indigo-500', 'fuchsia-500', 'cyan-400', 'red-500'
+            ];
+
+            portfolioData.forEach((item, index) => {
+                const btn = document.createElement('div');
+                
+                let accentColor = colorMap[index];
+                
+                btn.className = `nav-node px-4 py-3 border border-transparent bg-slate-900/30 text-sm font-semibold flex items-center gap-4 hover:border-l-${accentColor} ${item.id === activeNodeId ? 'active text-white bg-slate-800/80 border-slate-700' : 'text-slate-400 hover:bg-slate-800/50'}`;
+                btn.onclick = () => switchNode(item.id);
+                
+                // Menetapkan border-left inline style untuk elemen aktif agar sesuai dengan warna temanya
+                if (item.id === activeNodeId) {
+                    // Karena kita menggunakan class tailwind dinamis yang mungkin di-purge, 
+                    // kita paksa warnanya melalui border inline atau biarkan class .active menanganinya (warna cyan default)
+                    // Tapi agar keren, kita biarkan cyan menjadi warna default untuk 'active' di CSS.
+                }
+
+                btn.innerHTML = `
+                    <span class="node-id orbitron text-xs ${item.id === activeNodeId ? '' : 'text-slate-600'} w-8 bg-black/50 px-1 py-0.5 text-center">[${item.icon}]</span>
+                    <span class="tracking-widest uppercase text-[11px]">${item.title}</span>
+                `;
+                navContainer.appendChild(btn);
+            });
+        }
+
+        // Fungsi Ganti Konten (Animasi)
+        function switchNode(id) {
+            if (activeNodeId === id) return;
+            activeNodeId = id;
+            renderNav();
+            
+            // Efek Keluar (Fade Out)
+            contentDisplay.style.opacity = '0';
+            contentDisplay.style.transform = 'translateY(-10px) scale(0.99)';
+            
+            setTimeout(() => {
+                const data = portfolioData.find(d => d.id === id);
+                contentDisplay.innerHTML = `
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+                    ${data.content}
+                `;
+                // Efek Masuk kembali (Diatur oleh kelas animate-enter di dalam konten)
+                contentDisplay.style.opacity = '1';
+                contentDisplay.style.transform = 'translateY(0) scale(1)';
+                
+                contentDisplay.scrollTop = 0; // Kembali ke atas
+            }, 300); // Sinkron dengan durasi transisi CSS
+        }
+
+        // Inisialisasi awal UI
+        renderNav();
+        contentDisplay.innerHTML = `
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+            ${portfolioData[0].content}
+        `;
+        contentDisplay.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+
+
+        // Kanvas Jaringan Taktis Latar Belakang
+        const canvas = document.getElementById('tactical-bg');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        let particles = [];
+        const connectionDistance = 160;
+        let mouse = { x: null, y: null };
+
+        // Pelacakan kursor mouse
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        
+        // Membersihkan mouse saat meninggalkan jendela
+        window.addEventListener('mouseout', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            initParticles();
+        }
+
+        function initParticles() {
+            particles = [];
+            const numParticles = Math.floor((width * height) / 12000); // Kepadatan partikel
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    baseX: Math.random() * width,
+                    baseY: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4,
+                    size: Math.random() * 1.5 + 0.5,
+                    glow: Math.random() > 0.85
+                });
+            }
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.02)'; // Grid cyan sangat redup
+            ctx.lineWidth = 1;
+            const gridSize = 40;
+            const offset = (Date.now() / 60) % gridSize; // Pergerakan pan perlahan
+
+            ctx.beginPath();
+            for (let x = -gridSize; x < width; x += gridSize) {
+                ctx.moveTo(x + offset, 0);
+                ctx.lineTo(x + offset, height);
+            }
+            for (let y = -gridSize; y < height; y += gridSize) {
+                ctx.moveTo(0, y + offset);
+                ctx.lineTo(width, y + offset);
+            }
+            ctx.stroke();
+        }
+
+        function drawParticles() {
+            ctx.clearRect(0, 0, width, height);
+            
+            drawGrid();
+
+            // Memperbarui & Menggambar Titik Data (Partikel)
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Pantulan dinding lunak
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                // Interaksi dengan Mouse (Efek tolakan & tarik)
+                if (mouse.x != null && mouse.y != null) {
+                    let dx = mouse.x - p.x;
+                    let dy = mouse.y - p.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 120) {
+                        // Menjauh dari mouse perlahan
+                        p.x -= dx * 0.02;
+                        p.y -= dy * 0.02;
+                    }
+                }
+
+                // Gambar Partikel
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.glow ? 'rgba(0, 240, 255, 0.9)' : 'rgba(100, 116, 139, 0.5)';
+                if (p.glow) {
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#00f0ff';
+                }
+                ctx.fill();
+                ctx.shadowBlur = 0; // Setel ulang
+            }
+
+            // Menggambar Garis Koneksi Antar Node
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < connectionDistance) {
+                        const alpha = 1 - (dist / connectionDistance);
+                        ctx.strokeStyle = `rgba(0, 240, 255, ${alpha * 0.25})`;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Koneksi ke Mouse
+                if (mouse.x != null && mouse.y != null) {
+                    const mdx = particles[i].x - mouse.x;
+                    const mdy = particles[i].y - mouse.y;
+                    const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+                    
+                    if (mdist < 150) {
+                        const alpha = 1 - (mdist / 150);
+                        ctx.strokeStyle = `rgba(0, 240, 255, ${alpha * 0.5})`;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Putaran Animasi Utama
+        function animate() {
+            drawParticles();
+            requestAnimationFrame(animate);
+        }
+
+        // Memulai setelah window dimuat
+        window.onload = function() {
+            animate();
+        };
+
+    </script>
+</body>
+</html>
